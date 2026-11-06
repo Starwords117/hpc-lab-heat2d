@@ -49,10 +49,32 @@
 
 ## 环境
 
-- NVIDIA 显卡 ≥4GB（8GB 富余，本题显存峰值 ~1.1GB；热身 ~3GB）+ CUDA Toolkit ≥11.8（含 `nvcc` 与 `nsight-compute`）；Windows 建议 WSL2（CUDA on WSL 官方支持）
+- NVIDIA 显卡 ≥4GB（8GB 富余，本题显存峰值 ~1.1GB；热身 ~3GB）+ CUDA Toolkit ≥11.8（含 `nvcc` 与 `nsight-compute`）
 - `-arch` 对照见 `src/Makefile` 注释；`-arch=native` 需要 CUDA ≥11.5
 - AMD 显卡的同学：`make hip`（同一份源码走 ROCm/hipcc，本题验证过这条路径）
 - 无第三方库依赖；判分脚本只需 python3（numpy 可选，没有也能跑）
+
+### Windows 用户（两条路径，均可跑）
+
+**路径一（推荐）：WSL2** —— 本题全部脚本（make / bench.sh / ncu / compare.py）原样可用：
+
+1. Windows 装好 NVIDIA 显卡驱动；
+2. 管理员 PowerShell 执行 `wsl --install -d Ubuntu`，重启进入 Ubuntu；
+3. 在 Ubuntu 内按上文安装 CUDA Toolkit（**不要**在 WSL 里再装 Linux 版 NVIDIA 驱动，Windows 驱动会自动透传）；
+4. 代码 clone 到 Linux 家目录（`~/`），不要放 `/mnt/c`——否则 nvcc 编译和 512MB dump 读写慢一个量级；资源管理器地址栏输 `\\wsl$` 可直接取 dump 文件。
+
+**路径二：原生 Windows** —— 代码可编译可跑（纯标准 C/C++ + CUDA Runtime API），但没有 make 和 bench.sh。前提：装 Visual Studio 2022 Community（勾"使用 C++ 的桌面开发"）+ CUDA Toolkit，在 **x64 Native Tools Command Prompt** 里：
+
+```bat
+nvcc -O3 -arch=native warmup_matadd.cu -o warmup.exe
+nvcc -O3 -arch=native heat_naive.cu -o naive.exe
+cl /O2 /utf-8 heat_serial.cpp
+```
+
+- 计时：三个程序都自己打印 `FINAL secs` / `kernel_secs`，每个配置手动跑 3 次取中位数（替代 bench.sh）；
+- 判分：`python3 scripts\compare.py ref.dump yours.dump --tol 1e-9`（装 Python 3 即可）；
+- `ncu` Windows 原生可用（toolkit 自带），如 `ncu .\naive.exe 8192 500`；
+- 源码含中文注释，个别终端可能显示乱码——不影响编译与判分（PASS/FAIL 是 ASCII）。
 
 ## 快速开始
 
