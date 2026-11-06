@@ -36,8 +36,9 @@ def compare_numpy(ref, got, n):
     dts = {0: np.float64, 1: np.float32}
     _, _, d1 = load_header(ref)
     _, _, d2 = load_header(got)
-    a = np.fromfile(ref, dtype=dts[d1], count=n * n).reshape(n, n).astype(np.float64)
-    b = np.fromfile(got, dtype=dts[d2], count=n * n).reshape(n, n).astype(np.float64)
+    # 数据从 offset=16 起 (头部: magic 4B + 三个 uint32)
+    a = np.fromfile(ref, dtype=dts[d1], count=n * n, offset=16).reshape(n, n).astype(np.float64)
+    b = np.fromfile(got, dtype=dts[d2], count=n * n, offset=16).reshape(n, n).astype(np.float64)
     if a.size != n * n or b.size != n * n:
         sys.exit("文件截断")
     diff = np.abs(a - b)

@@ -23,12 +23,19 @@
 
 ### 主题（3~4 小时 + 报告）
 
-标准算例（**全程不许改**）：`N=8192`，`iters=500`，磁盘留 ~1.5GB 放 dump 文件。
+算例阶梯（规模 `N=8192` 全程不许改，`iters` 分档；磁盘留 ~1.5GB 放 dump）：
 
-| 步骤 | 命令 | 要记录的东西 |
+| 档位 | 命令 | 用途 | CPU 串行参考耗时 |
+|---|---|---|---|
+| smoke | `./serial 512 200` | 冒烟/正确性 | <1 s |
+| selftest | `./serial 2048 500` | 自测/对锚点 | ~1.3 s |
+| medium | `./serial 8192 500` | 开发中间检查点 | ~25 s |
+| **full（评分算例）** | `./serial 8192 2500` | ①②③ 与提交 | ~2~3 min |
+
+| 步骤 | 命令（full 档） | 要记录的东西 |
 |---|---|---|
-| ① CPU 基线 | `./serial 8192 500 --dump ref.dump` | secs、mlups；`ref.dump` 是正确性基准 |
-| ② 移植版 | `./naive 8192 500 --dump naive.dump` | secs、mlups；与 ① 比对应 PASS |
+| ① CPU 基线 | `./serial 8192 2500 --dump ref.dump`（跑 1 次） | secs、mlups；`ref.dump` 是正确性基准 |
+| ② 移植版 | `./naive 8192 2500 --dump naive.dump`（跑 1 次即可，很慢） | secs、mlups；与 ① 比对应 PASS |
 | ③ 优化版 | 你的代码，同算例 | wall / kernel 两个时间、dram_gbps、compare 结果 |
 
 优化阶梯（逐级拿分）：
@@ -59,24 +66,26 @@ python3 ../scripts/compare.py ../baseline/ref_smoke_512x200.dump /tmp/ref_smoke.
 ./naive 512 200 --dump /tmp/naive_smoke.dump
 python3 ../scripts/compare.py ../baseline/ref_smoke_512x200.dump /tmp/naive_smoke.dump
 
-# 标准算例（参考机器: CPU 串行 ~25-35 s, naive 21-64 s, 见 baseline/BASELINE.md）
-./serial 8192 500 --dump ref.dump
-./naive 8192 500 --dump naive.dump
+# 评分算例 full（参考机器: CPU 串行 ~2-3 min, naive 2-5 min, 见 baseline/BASELINE.md）
+# 开发时建议先用 medium (iters=500) 迭代, 最后再上 full
+./serial 8192 2500 --dump ref.dump
+./naive 8192 2500 --dump naive.dump
 ```
 
 ## 正确性判据（一票否决）
 
 - **最终温度场逐点比对**：`python3 ../scripts/compare.py ref.dump yours.dump --tol 1e-9`；
-- 双精度容差 **1e-9**；float 容差 **1e-4**（标定值见 BASELINE.md；误差随迭代数线性增长，改迭代数必须重推容差并在报告说明）；
+- 双精度容差 **1e-9**（所有档位）；float 容差按档位：medium（500 步）**1e-4**、full（2500 步）**2e-4**（标定与实测误差见 BASELINE.md；误差随迭代数增长，改迭代数必须重推容差并在报告说明）；
 - dump 头里记录了 N 与 iters，规模不一致会被拒；
 - 自检锚点：`baseline/BASELINE.md` 的 chksum 表（双精度跨机器逐位一致，跑完先对表）。
 
 ## 计时与提交
 
 ```bash
-../scripts/bench.sh "./naive 8192 500"    # 3 次取中位数, 各次输出保留
+../scripts/bench.sh "你的程序 8192 2500"   # full 档正式计时: 3 次取中位数
 ```
 
+- 3 次取中位数只要求**优化终版**；① 串行基线与 ② 移植版在 full 档各跑 1 次即可（等它们 3 次太浪费）；
 - 区分 **wall**（端到端，bench.sh 量的）与 **kernel**（cudaEvents，你的程序自己打印）；
 - `dram_gbps = 2 × N² × sizeof(类型) × iters / kernel时间`——口径：每格点每迭代至少从显存读 1 次、写 1 次（4 次邻域读由缓存吸收），与 ncu 的 `dram__bytes` 同口径可互相核对；
 - 提交：① 最终代码 ② compare.py 完整输出 ③ 时间表（naive→L1→L2→L3/L4 的 wall/kernel/dram_gbps）④ ncu 关键页截图（Speed Of Light + Memory Workload Analysis 各一）⑤ 报告 ≤2 页（热点怎么找的→每步改动与效果→L3 必答→block 扫描结果与解释）。**报告占 30%**；
