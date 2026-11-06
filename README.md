@@ -79,7 +79,7 @@ cl /O2 /utf-8 heat_serial.cpp
 ## 快速开始
 
 ```bash
-git clone <本仓库 URL> && cd hpc-lab-heat2d/src
+git clone https://github.com/Starwords117/hpc-lab-heat2d.git && cd hpc-lab-heat2d/src
 make                # 产出 warmup / serial / naive; 你优化后的程序是第四个
 
 # 冒烟（秒级; 三份程序结果都应与基准一致）
