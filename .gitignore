@@ -1,0 +1,19 @@
+# 构建产物 (src/)
+warmup
+serial
+naive
+warmup_hip
+naive_hip
+*.o
+
+# 运行产物 (baseline/ 下的参考场除外)
+*.dump
+!baseline/*.dump
+bench_run_*.out
+bench_run_*.err
+bench_time.*
+
+# 杂项
+__pycache__/
+*.pyc
+.DS_Store
